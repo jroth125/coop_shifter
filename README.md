@@ -65,7 +65,7 @@ $ python3 main.py -d 10-02-2023 -s 11 -e 15 --shift checkout --phone-num 1234567
 If you want *any* shift and don't care which one it is, you can just leave out the `--shift` arg:
 
 ```
-$ python3 main.py -d 10-02-2023 -s 11 -e 15 --shift checkout
+$ python3 main.py -d 10-02-2023 -s 11 -e 15 
 ```
 
 ## How it works
