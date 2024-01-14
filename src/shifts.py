@@ -42,28 +42,31 @@ class ShiftNotifier:
         sleep_time_secs: int,
     ) -> List[str]:
         while self._is_not_timed_out():
-            with CoopSession(
-                keep_session_alive=keep_session_alive,
-                username=os.getenv("COOP_USERNAME"),
-                password=os.getenv("COOP_PASSWORD"),
-            ) as coop_sesh:
-                shifts: List[CoopShift] = self._get_available_shifts(
-                    coop_sesh=coop_sesh,
-                    shift_date=shift_date,
-                    start_hour=start_hour,
-                    end_hour=end_hour,
-                    shift_name=shift_name,
-                )
-                if not shifts:
-                    logger.info(f"No shifts found - will retry in {sleep_time_secs}")
-                    time.sleep(sleep_time_secs)
-                    continue
+            try:
+                with CoopSession(
+                    keep_session_alive=keep_session_alive,
+                    username=os.getenv("COOP_USERNAME"),
+                    password=os.getenv("COOP_PASSWORD"),
+                ) as coop_sesh:
+                    shifts: List[CoopShift] = self._get_available_shifts(
+                        coop_sesh=coop_sesh,
+                        shift_date=shift_date,
+                        start_hour=start_hour,
+                        end_hour=end_hour,
+                        shift_name=shift_name,
+                    )
+                    if not shifts:
+                        logger.info(f"No shifts found - will retry in {sleep_time_secs}")
+                        time.sleep(sleep_time_secs)
+                        continue
 
-                human_readable_shifts = "\n".join(
-                    [f"{shift.shift_time}: {shift.shift_name}" for shift in shifts]
-                )
-                print(f"====== PRINTING SHIFT TIMES ====== \n{human_readable_shifts}")
-                self.maybe_send_text(human_readable_shifts)
+                    human_readable_shifts = "\n".join(
+                        [f"{shift.shift_time}: {shift.shift_name}" for shift in shifts]
+                    )
+                    print(f"====== PRINTING SHIFT TIMES ====== \n{human_readable_shifts}")
+                    self.maybe_send_text(human_readable_shifts)
+            except AttributeError as e:
+                logger.error("Error caught! Will retry in 20 seconds... \n" + str(e))
 
         logger.info("Timed out! Ending... ")
 
