@@ -86,8 +86,10 @@ class ShiftNotifier:
         shift_doms = [
             coop_sesh.get_shifts_page_dom(s, page) for page in range(self.PAGES)
         ]
-        for shift_dom in shift_doms:
-            shifts_grid = shift_dom.find("div", {"class": "grid-container"})
+        for page, shift_dom in enumerate(shift_doms):
+            if not (shifts_grid := shift_dom.find("div", {"class": "grid-container"})):
+                logger.warning(f"No shifts found on page {page + 1}!")
+                continue
             try:
                 shifts = next(
                     col.find_all("a", {"class": "shift"})
@@ -150,10 +152,13 @@ class ShiftNotifier:
         for shift in all_shifts:
             time_raw = shift.find("b", recursive=False).string
             parsed_shift_time = dateparser.parse(time_raw)
+            if not (parsed_shift_time := dateparser.parse(time_raw)):
+                logger.warning(f"Couldn't parse time for shift!")
+                continue
 
-            valid_shift_starttime: bool = parsed_shift_time.hour >= start_hour # pyright: ignore[reportOptionalMemberAccess]
+            valid_shift_starttime: bool = parsed_shift_time.hour >= start_hour
             valid_shift_endtime: bool = (
-                end_hour >= parsed_shift_time.hour + SHIFT_TIME_HRS # pyright: ignore[reportOptionalMemberAccess]
+                end_hour >= parsed_shift_time.hour + SHIFT_TIME_HRS
             )
             # shifts with "my_shift" class are ones you have already signed up for
             not_signed_up_for_yet: bool = "my_shift" not in shift.attrs["class"]
@@ -166,14 +171,24 @@ class ShiftNotifier:
                     eligible_shifts.append(
                         CoopShift(
                             shift_name=cur_shift_name,
-                            shift_time=parsed_shift_time.strftime("%H:%M"),  # pyright: ignore[reportOptionalMemberAccess]
+                            shift_time=parsed_shift_time.strftime("%H:%M"), 
                         )
                     )
         return eligible_shifts
 
     @staticmethod
-    def _get_date_from_col(col: Tag) -> datetime.date:
-        raw_date = col.find("p").find("b").string # pyright: ignore[reportOptionalMemberAccess]
-        date = dateparser.parse(raw_date) # pyright: ignore[reportArgumentType]
+    def _get_date_from_col(col: Tag) -> datetime.date | None:
+        if not (p_tag := col.find("p")):
+            logger.warning("No ptag found for shift date. Did HTML format change?")
+            return None
+        if not (b_tag := p_tag.find("b")):
+            logger.warning("No btag found for shift date. Did HTML format change?")
+            return None
+        if not (raw_date := b_tag.string):
+            logger.warning(f"Date tag {b_tag} could not be made into string! Did HTML format change?")
+            return None
+        if not (date := dateparser.parse(raw_date)):
+            logger.warning(f"Raw shift date {raw_date} was unable to be parsed!")
+            return None
         logger.debug(f"Date for current column is {date}")
-        return date # pyright: ignore[reportReturnType]
+        return date 
