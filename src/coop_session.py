@@ -4,7 +4,7 @@ import logging
 import datetime
 
 from bs4 import BeautifulSoup
-from typing import List, Optional, Type
+from typing import Optional, Type
 from types import TracebackType
 
 from url_constants import BASE_URL, LOGIN_URL, CSRF_KEY, SHIFTS_URL, EXTRA_DATA_URL
@@ -24,7 +24,7 @@ class CoopSession:
         self.username: str = username
         self.password: str = password
 
-    def __enter__(self) -> None:
+    def __enter__(self) -> "CoopSession":
         with shelve.open(self.DB_PATH) as db:
             if self.SESSION_KEY not in db:
                 logger.info("Creating new session")
@@ -60,7 +60,7 @@ class CoopSession:
     def _login(self) -> None:
         site = self.session.get(f"{BASE_URL}{LOGIN_URL}")
         bs_content = BeautifulSoup(site.content, "html.parser")
-        token = bs_content.find("input", {"name": CSRF_KEY})["value"]
+        token = bs_content.find("input", {"name": CSRF_KEY})["value"] # pyright: ignore[reportOptionalSubscript]
         login_data = {
             "username": self.username,
             "password": self.password,
