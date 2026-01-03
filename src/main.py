@@ -79,7 +79,7 @@ def _set_logger(args: argparse.Namespace) -> logging.Logger:
 
 def _get_shift_date(args: argparse.Namespace, logger: logging.Logger) -> datetime.date:
     shift_date = dateparser.parse(
-        args.date, settings={"DATE_ORDER": "MDY", "DEFAULT_LANGUAGES": ["en"]}
+        args.date, settings={"DATE_ORDER": "MDY", "DEFAULT_LANGUAGES": ["en"]} # pyright: ignore[reportArgumentType]
     )
     assert shift_date is not None, (
         f"Date given of {args.date} couldn't be parsed! "

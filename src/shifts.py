@@ -6,7 +6,7 @@ import os
 import dateparser
 import dotenv
 from typing import List, NamedTuple
-from bs4 import Tag
+from bs4 import Tag, ResultSet
 from coop_session import CoopSession
 from url_constants import TEXTBELT_URL
 
@@ -40,13 +40,13 @@ class ShiftNotifier:
         shift_name: str,
         keep_session_alive: bool,
         sleep_time_secs: int,
-    ) -> List[str]:
+    ) -> None:
         while self._is_not_timed_out():
             try:
                 with CoopSession(
                     keep_session_alive=keep_session_alive,
-                    username=os.getenv("COOP_USERNAME"),
-                    password=os.getenv("COOP_PASSWORD"),
+                    username=os.getenv("COOP_USERNAME"), # pyright: ignore[reportArgumentType]
+                    password=os.getenv("COOP_PASSWORD"), # pyright: ignore[reportArgumentType]
                 ) as coop_sesh:
                     shifts: List[CoopShift] = self._get_available_shifts(
                         coop_sesh=coop_sesh,
@@ -144,36 +144,36 @@ class ShiftNotifier:
             logger.info("Not sending text")
 
     def _get_matching_shifts(
-        self, all_shifts: List[str], shift_name: str, start_hour: int, end_hour: int
-    ) -> List[str]:
+        self, all_shifts: ResultSet, shift_name: str, start_hour: int, end_hour: int
+    ) -> List[CoopShift]:
         eligible_shifts: List[CoopShift] = []
         for shift in all_shifts:
             time_raw = shift.find("b", recursive=False).string
             parsed_shift_time = dateparser.parse(time_raw)
 
-            valid_shift_starttime: bool = parsed_shift_time.hour >= start_hour
+            valid_shift_starttime: bool = parsed_shift_time.hour >= start_hour # pyright: ignore[reportOptionalMemberAccess]
             valid_shift_endtime: bool = (
-                end_hour >= parsed_shift_time.hour + SHIFT_TIME_HRS
+                end_hour >= parsed_shift_time.hour + SHIFT_TIME_HRS # pyright: ignore[reportOptionalMemberAccess]
             )
             # shifts with "my_shift" class are ones you have already signed up for
             not_signed_up_for_yet: bool = "my_shift" not in shift.attrs["class"]
 
             if valid_shift_starttime and valid_shift_endtime and not_signed_up_for_yet:
-                cur_shift_name = str(shift.contents[2]).splitlines()[2].strip()[:-2]
+                cur_shift_name = str(shift.contents[2]).splitlines()[2].strip()[:-2] 
                 if (shift_name == "all") or (
                     cur_shift_name.lower() == shift_name.lower()
                 ):
                     eligible_shifts.append(
                         CoopShift(
                             shift_name=cur_shift_name,
-                            shift_time=parsed_shift_time.strftime("%H:%M"),
+                            shift_time=parsed_shift_time.strftime("%H:%M"),  # pyright: ignore[reportOptionalMemberAccess]
                         )
                     )
         return eligible_shifts
 
     @staticmethod
     def _get_date_from_col(col: Tag) -> datetime.date:
-        raw_date = col.find("p").find("b").string
-        date = dateparser.parse(raw_date)
+        raw_date = col.find("p").find("b").string # pyright: ignore[reportOptionalMemberAccess]
+        date = dateparser.parse(raw_date) # pyright: ignore[reportArgumentType]
         logger.debug(f"Date for current column is {date}")
-        return date
+        return date # pyright: ignore[reportReturnType]
