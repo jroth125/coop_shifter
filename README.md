@@ -8,6 +8,7 @@ Save the number you will get texts from: 1-903-321-4254
 Ensure you have Make and Python3.11 installed on your device. Then, install the dependencies you need:
 
 ```
+make venv
 make install
 ```
 
